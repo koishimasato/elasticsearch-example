@@ -1,71 +1,40 @@
-version: '2.1'
+version: "3.3"
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:5.3.0
-    container_name: elasticsearch
+    image: docker.elastic.co/elasticsearch/elasticsearch:5.6.4
     environment:
-      - cluster.name=dev-kibana-cluster
-      - node.name=dev-kibana-01
-      - bootstrap.memory_lock=true
-      - xpack.security.enabled=false
-      - xpack.monitoring.enabled=true
-      - xpack.watcher.enabled=false
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
       - xpack.graph.enabled=false
-      - xpack.monitoring.history.duration=1d
-      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - xpack.ml.enabled=false
+      - xpack.monitoring.enabled=false
+      - xpack.security.enabled=false
+      - xpack.watcher.enabled=false
+    ports:
+      - "9200:9200"
+      - "9300:9300"
     ulimits:
       memlock:
         soft: -1
         hard: -1
-      nofile:
-        soft: 65536
-        hard: 65536
-    mem_limit: 2g
-    memswap_limit: 2g
-    cap_add:
-      - IPC_LOCK
     volumes:
-      - es_data1:/usr/share/elasticsearch/data
-    ports:
-      - 9200:9200
-    networks:
-      - kibana_net
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "10"
+      - es-data:/usr/share/elasticsearch/data
+
   kibana:
-    image: docker.elastic.co/kibana/kibana:5.3.0
-    container_name: kibana
+    image: docker.elastic.co/kibana/kibana:5.6.4
     environment:
-      ELASTICSEARCH_URL: "http://elasticsearch:9200"
-      XPACK_MONITORING_ELASTICSEARCH_URL: "http://elasticsearch:9200"
-      XPACK_SECURITY_ENABLED: "false"
+      - xpack.graph.enabled=false
+      - xpack.ml.enabled=false
+      - xpack.monitoring.enabled=false
+      - xpack.reporting.enabled=false
+      - xpack.security.enabled=false
+      - xpack.monitoring.report_stats=false
+      - xpack.monitoring.ui.enabled=false
     ports:
-     - 80:5601
-    networks:
-      - kibana_net
-    mem_limit: 2g
-    memswap_limit: 2g
-    depends_on:
-      - elasticsearch
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "10"
+      - "5601:5601"
+    links:
+      - elasticsearch:elasticsearch
 
 volumes:
-  es_data1:
+  es-data:
     driver: local
-
-networks:
-  kibana_net:
-    driver: bridge
-    ipam:
-      driver: default
-      config:
-        - subnet: 172.18.0.0/24
-          gateway: 172.18.0.1
-
